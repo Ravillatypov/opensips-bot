@@ -9,6 +9,8 @@ class CallbackMethods:
     add_trunk = 'add_trunk'
     add_trunk_accept = 'add_trunk_accept'
     add_trunk_decline = 'add_trunk_decline'
+    add_trunk_port = 'add_trunk_port'
+    add_trunk_proxy = 'add_trunk_proxy'
 
 
 class TrunkForm(StatesGroup):
@@ -18,3 +20,5 @@ class TrunkForm(StatesGroup):
     domain = State()
     password = State()
     confirm = State()
+    port = State()
+    proxy = State()

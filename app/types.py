@@ -8,3 +8,5 @@ class Trunk:
     username: str = ''
     domain: str = ''
     password: str = ''
+    port: str = None
+    proxy: str = None
