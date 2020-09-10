@@ -35,8 +35,7 @@ async def send_confirm_message(chat_id, data):
                f'vats_id: {data.get("vats_id")}\n'
                f'domain: {data.get("domain")}\n'
                f'username: {data.get("username")}\n'
-               f'password: {data.get("password")}\n'
-               '',)
+               f'password: {data.get("password")}\n')
 
     if data.get('port'):
         message += f'port: {data.get("port")}\n'
