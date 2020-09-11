@@ -4,6 +4,7 @@ from typing import Tuple
 from aiohttp.client import ClientSession
 
 from app import settings
+from app.settings import OUT_DPID_START, VOX_USERNAME
 from app.types import Trunk
 
 
@@ -40,42 +41,42 @@ async def add_dial_plan(conn, dpid, pr, match_exp, repl_exp, attrs):
     )
 
 
-async def add_trunk(trunk: Trunk) -> bool:
+async def add_trunk_to_db(trunk: Trunk) -> bool:
     if not settings.db_pool:
         return False
 
     async with settings.db_pool.acquire() as conn:
         async with conn.transaction():
-            last_attrs = await conn.fetchval('select dpid from dialplan order by dpid desc limit 1;')
-            attrs = last_attrs + 1
+            out_attr = OUT_DPID_START + trunk.vats_id
+            out_attr_next = OUT_DPID_START + out_attr
             await conn.execute(
                 'insert into registrant '
                 '(registrar, aor, username, password, binding_uri, expiry, proxy) '
                 'values ($1, $2, $3, $4, $5, 180, $6);',
-                f'sip:{trunk.domain}{trunk.port}',
-                f'sip:{trunk.username}@{trunk.domain}',
-                f'{trunk.username}',
-                f'{trunk.password}',
-                f'sip:{trunk.username}@{settings.OSIPS_IP}:5060',
+                trunk.domain_uri,
+                trunk.sip_uri,
+                trunk.username,
+                trunk.password,
+                trunk.local_sip_uri,
                 trunk.proxy
             )
             await conn.execute(
                 'insert into dr_gateways (gwid, type, address, strip, attrs, probe_mode, state, description) '
                 'values ($1, 0, $2, 0, $3, 0, 0, $4);',
                 f'{trunk.vats_id}',
-                f'sip:{trunk.domain}{trunk.port}',
-                f'{attrs}',
+                trunk.domain_uri,
+                f'{out_attr}',
                 trunk.description,
             )
             await conn.execute(
                 'insert into re_grp (reg_exp, group_id) values ($1, $2)',
-                f'^sip:{trunk.username}@{trunk.domain}',
+                trunk.sip_uri,
                 trunk.vats_id,
             )
-            await add_dial_plan(conn, attrs, 100, '^.*', trunk.username, f'{attrs + 1}')
-            await add_dial_plan(conn, attrs + 1, 100, '^.*', trunk.domain, None)
-            await add_dial_plan(conn, attrs + 2, 1, f'^{trunk.username}', settings.VOX_USERNAME, f'{attrs + 3}')
-            await add_dial_plan(conn, attrs + 3, 1, f'^{settings.OSIPS_IP}', settings.OSIPS_DOMAIN, None)
+
+            await add_dial_plan(conn, out_attr, 100, '^.*', trunk.username, f'{out_attr_next}')
+            await add_dial_plan(conn, out_attr_next, 100, '^.*', trunk.domain, None)
+            await add_dial_plan(conn, trunk.vats_id, 1, trunk.username_regexp, VOX_USERNAME, f'{OUT_DPID_START}')
             return True
 
 

@@ -1,65 +1,16 @@
 from logging import getLogger
 
 from aiogram.dispatcher import FSMContext
-from aiogram.types import CallbackQuery, Message, inline_keyboard as kb
+from aiogram.types import CallbackQuery, Message
 
 from app.bot.consts import CallbackMethods, TrunkForm
 from app.bot.misc import bot, dp
-from app.bot.utils import add_keyboard
+from app.bot.utils import add_keyboard, send_confirm_message
+from app.settings import OUT_DPID_START
 from app.types import Trunk
-from app.utils import vats_exists, add_trunk as osips_add_trunk, opensips_cmd
+from app.utils import vats_exists, opensips_cmd, add_trunk_to_db
 
 logger = getLogger(__name__)
-
-
-async def send_confirm_message(chat_id, data):
-    markup = kb.InlineKeyboardMarkup()
-    markup.add(kb.InlineKeyboardButton(
-        'Подтвердить',
-        callback_data=CallbackMethods.add_trunk_accept
-    ))
-    markup.add(kb.InlineKeyboardButton(
-        'Отклонить',
-        callback_data=CallbackMethods.add_trunk_decline
-    ))
-    markup.add(kb.InlineKeyboardButton(
-        'Указать порт',
-        callback_data=CallbackMethods.add_trunk_port
-    ))
-    markup.add(kb.InlineKeyboardButton(
-        'Указать прокси',
-        callback_data=CallbackMethods.add_trunk_proxy
-    ))
-
-    message = ('Данные транка:\n'
-               f'vats_id: {data.get("vats_id")}\n'
-               f'domain: {data.get("domain")}\n'
-               f'username: {data.get("username")}\n'
-               f'password: {data.get("password")}\n')
-
-    if data.get('port'):
-        message += f'port: {data.get("port")}\n'
-
-    if data.get('proxy'):
-        message += f'proxy: {data.get("proxy")}\n'
-
-    await bot.send_message(
-        chat_id,
-        f'{message}\nПодвердите добавление транка',
-        reply_markup=markup
-    )
-
-
-@dp.callback_query_handler(lambda x: x.data == CallbackMethods.add_trunk)
-async def add_trunk(callback_query: CallbackQuery, **kwargs):
-    await callback_query.answer()
-    await callback_query.message.delete()
-    await bot.send_message(
-        callback_query.message.chat.id,
-        'Описание транка'
-    )
-
-    await TrunkForm.first()
 
 
 @dp.message_handler(state=TrunkForm.description)
@@ -74,6 +25,12 @@ async def description(message: Message, state: FSMContext):
 
 @dp.message_handler(lambda m: m.text.isdigit(), state=TrunkForm.vats_id)
 async def vats_id(message: Message, state: FSMContext):
+    if int(message.text) >= OUT_DPID_START:
+        await bot.send_message(
+            message.chat.id,
+            'vats_id не может быть больше 9999'
+        )
+
     if await vats_exists(message.text):
         await state.finish()
         await add_keyboard(message.chat.id, 'Данный vats_id уже добавлен')
@@ -114,6 +71,40 @@ async def password(message: Message, state: FSMContext):
     await send_confirm_message(message.chat.id, data)
 
 
+@dp.message_handler(lambda m: m.text.isdigit(), state=TrunkForm.port)
+async def port(message: Message, state: FSMContext):
+    await state.update_data(port=int(message.text.strip()))
+    await TrunkForm.confirm.set()
+    await send_confirm_message(
+        message.chat.id,
+        await state.get_data()
+    )
+
+
+@dp.message_handler(state=TrunkForm.proxy)
+async def port(message: Message, state: FSMContext):
+    await state.update_data(proxy=message.text.strip())
+    await TrunkForm.confirm.set()
+    await send_confirm_message(
+        message.chat.id,
+        await state.get_data()
+    )
+
+
+# Callbacks
+
+@dp.callback_query_handler(lambda x: x.data == CallbackMethods.add_trunk)
+async def add_trunk(callback_query: CallbackQuery, **kwargs):
+    await callback_query.answer()
+    await callback_query.message.delete()
+    await bot.send_message(
+        callback_query.message.chat.id,
+        'Описание транка'
+    )
+
+    await TrunkForm.first()
+
+
 @dp.callback_query_handler(lambda c: c.data == CallbackMethods.add_trunk_decline, state=TrunkForm.confirm)
 async def decline(callback_query: CallbackQuery, state: FSMContext, **kwargs):
     await state.finish()
@@ -149,7 +140,7 @@ async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
     try:
         port_number = f":{data.get('port')}" if data.get('port') else ''
         proxy_uri = f"sip:{data.get('proxy')}" if data.get('proxy') else None
-        await osips_add_trunk(Trunk(
+        await add_trunk_to_db(Trunk(
             data.get('vats_id'),
             data.get('description'),
             data.get('username'),
@@ -168,23 +159,3 @@ async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
         await callback_query.message.delete_reply_markup()
         await state.finish()
         await add_keyboard(callback_query.message.chat.id, 'Добавить еще транк?')
-
-
-@dp.message_handler(lambda m: m.text.isdigit(), state=TrunkForm.port)
-async def port(message: Message, state: FSMContext):
-    await state.update_data(port=int(message.text.strip()))
-    await TrunkForm.confirm.set()
-    await send_confirm_message(
-        message.chat.id,
-        await state.get_data()
-    )
-
-
-@dp.message_handler(state=TrunkForm.proxy)
-async def port(message: Message, state: FSMContext):
-    await state.update_data(proxy=message.text.strip())
-    await TrunkForm.confirm.set()
-    await send_confirm_message(
-        message.chat.id,
-        await state.get_data()
-    )
