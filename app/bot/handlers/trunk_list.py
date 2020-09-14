@@ -26,7 +26,8 @@ async def trunk_list(callback_query: CallbackQuery, **kwargs):
     # https://opensips.org/html/docs/modules/3.1.x/uac_registrant.html
 
     result = []
-    reg_list: List[dict] = await opensips_cmd('reg_list')
+    reg_list = await opensips_cmd('reg_list')
+    reg_list = reg_list.get('result', {}).get('Records', [])
     regs = {'^' + re.escape(i.get('AOR', '')): i.get('state') for i in reg_list}
 
     async with settings.db_pool as conn:
