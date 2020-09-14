@@ -1,5 +1,5 @@
 from os import environ as env
-from asyncpg.pool import Pool
+from app.db import DB
 
 TOKEN = env.get('API_TOKEN', default='')
 ADMINS = env.get('ADMINS', default='').split(',')
@@ -13,4 +13,4 @@ OUT_DPID_START = int(env.get('OUT_DPID_START', default='10000'))
 LOCAL_DB_PATH = env.get('LOCAL_DB_PATH', default='/tmp/bot-state')
 DB_DSN = env.get('DB_DSN', default='postgres://opensips:43YgEKx87s7l0HmNr1lc@127.0.0.1/opensips')
 
-db_pool: Pool = None
+db = DB(DB_DSN)

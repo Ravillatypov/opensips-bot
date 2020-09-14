@@ -1,10 +1,10 @@
 import asyncio
-from typing import Tuple, Union
+import re
+from typing import Tuple
 
 from aiohttp.client import ClientSession
 
-from app import settings
-from app.settings import OUT_DPID_START, VOX_USERNAME
+from app.settings import OUT_DPID_START, VOX_USERNAME, db, OSIPS_MI_URL
 from app.types import Trunk
 
 
@@ -25,10 +25,7 @@ opensips_cmd_seq = SequenceCounter()
 
 
 async def vats_exists(vats_id: str) -> bool:
-    if not settings.db_pool:
-        return True
-
-    async with settings.db_pool.acquire() as conn:
+    async with db as conn:
         vats = await conn.fetchrow('select gwid from dr_gateways where gwid = $1;', vats_id)
         return bool(vats)
 
@@ -42,10 +39,7 @@ async def add_dial_plan(conn, dpid, pr, match_exp, repl_exp, attrs):
 
 
 async def add_trunk_to_db(trunk: Trunk) -> bool:
-    if not settings.db_pool:
-        return False
-
-    async with settings.db_pool.acquire() as conn:
+    async with db as conn:
         async with conn.transaction():
             out_attr = OUT_DPID_START + trunk.vats_id
             out_attr_next = OUT_DPID_START + out_attr
@@ -70,7 +64,7 @@ async def add_trunk_to_db(trunk: Trunk) -> bool:
             )
             await conn.execute(
                 'insert into re_grp (reg_exp, group_id) values ($1, $2)',
-                trunk.sip_uri,
+                '^' + re.escape(f'{trunk.sip_uri}'),
                 trunk.vats_id,
             )
 
@@ -89,7 +83,7 @@ async def aio_cmd(cmd: str) -> Tuple[bool, bytes, bytes]:
 async def opensips_cmd(cmd: str) -> dict:
     data = {"jsonrpc": "2.0", "method": cmd, "id": opensips_cmd_seq.id}
     async with ClientSession() as session:
-        async with session.post(settings.OSIPS_MI_URL, json=data) as resp:
+        async with session.post(OSIPS_MI_URL, json=data) as resp:
             if resp.status == 200:
                 return await resp.json()
             raise Exception(await resp.text())
