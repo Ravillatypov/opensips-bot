@@ -1,5 +1,5 @@
 import asyncio
-from typing import Tuple
+from typing import Tuple, Union
 
 from aiohttp.client import ClientSession
 
@@ -86,7 +86,7 @@ async def aio_cmd(cmd: str) -> Tuple[bool, bytes, bytes]:
     return proc.returncode == 0, stdout, stderr
 
 
-async def opensips_cmd(cmd: str) -> dict:
+async def opensips_cmd(cmd: str) -> Union[dict, list]:
     data = {"jsonrpc": "2.0", "method": cmd, "id": opensips_cmd_seq.id}
     async with ClientSession() as session:
         async with session.post(settings.OSIPS_MI_URL, json=data) as resp:

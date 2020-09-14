@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from app.bot.consts import CallbackMethods, TrunkForm
 from app.bot.misc import bot, dp
 from app.bot.utils import add_keyboard, send_confirm_message
-from app.settings import OUT_DPID_START
+from app.settings import OUT_DPID_START, ADMINS
 from app.types import Trunk
 from app.utils import vats_exists, opensips_cmd, add_trunk_to_db
 
@@ -97,6 +97,14 @@ async def port(message: Message, state: FSMContext):
 async def add_trunk(callback_query: CallbackQuery, **kwargs):
     await callback_query.answer()
     await callback_query.message.delete()
+
+    if callback_query.message.chat.username not in ADMINS:
+        await bot.send_message(
+            callback_query.message.chat.id,
+            'Вы не админ!'
+        )
+        return
+
     await bot.send_message(
         callback_query.message.chat.id,
         'Описание транка'
@@ -136,6 +144,14 @@ async def proxy_callback(callback_query: CallbackQuery, state: FSMContext, **kwa
 async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
     data = await state.get_data()
     await callback_query.answer()
+
+    if callback_query.message.chat.username not in ADMINS:
+        await bot.send_message(
+            callback_query.message.chat.id,
+            'Вы не админ!'
+        )
+        await state.finish()
+        return
 
     try:
         port_number = f":{data.get('port')}" if data.get('port') else ''

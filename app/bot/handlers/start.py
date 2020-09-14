@@ -13,5 +13,6 @@ async def start(message: Message):
             message.chat.id,
             'Вы не админ!'
         )
+        return
 
     await add_keyboard(message.chat.id, 'Пока доступно только добавление транка')
