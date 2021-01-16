@@ -1,10 +1,9 @@
 import asyncio
-import re
 from typing import Tuple
 
 from aiohttp.client import ClientSession
 
-from app.settings import OUT_DPID_START, VOX_USERNAME, db, OSIPS_MI_URL
+from app.settings import OUT_DPID_START, db, OSIPS_MI_URL
 from app.types import Trunk
 
 
@@ -30,11 +29,11 @@ async def vats_exists(vats_id: str) -> bool:
         return bool(vats)
 
 
-async def add_dial_plan(conn, dpid, pr, match_exp, repl_exp, attrs):
+async def add_dial_plan(conn, dpid, pr, match_op, match_exp, match_flags, repl_exp, attrs):
     await conn.execute(
         'insert into dialplan (dpid, pr, match_op, match_exp, match_flags, repl_exp, disabled, attrs) '
-        'values ($1, $2, 1, $3, 0, $4, 0, $5);',
-        dpid, pr, match_exp, repl_exp, attrs
+        'values ($1, $2, $3, $4, $5, $6, 0, $7);',
+        dpid, pr, match_op, match_exp, match_flags, repl_exp, attrs,
     )
 
 
@@ -45,32 +44,31 @@ async def add_trunk_to_db(trunk: Trunk) -> bool:
             out_attr_next = OUT_DPID_START + out_attr
             await conn.execute(
                 'insert into registrant '
-                '(registrar, aor, username, password, binding_uri, expiry, proxy) '
-                'values ($1, $2, $3, $4, $5, 180, $6);',
+                '(registrar, aor, username, password, binding_uri, expiry, proxy, forced_socket, cluster_shtag) '
+                'values ($1, $2, $3, $4, $5, 300, $6, $7, $8);',
                 trunk.domain_uri,
                 trunk.sip_uri,
                 trunk.username,
                 trunk.password,
                 trunk.local_sip_uri,
-                trunk.proxy
+                trunk.proxy,
+                trunk.forced_socket,
+                trunk.cluster_shtag,
             )
             await conn.execute(
-                'insert into dr_gateways (gwid, type, address, strip, attrs, probe_mode, state, description) '
-                'values ($1, 0, $2, 0, $3, 0, 0, $4);',
+                'insert into dr_gateways (gwid, type, address, strip, attrs, probe_mode, state, description, socket) '
+                'values ($1, 0, $2, 0, $3, 0, 0, $4, $5);',
                 f'{trunk.vats_id}',
                 trunk.domain_uri,
                 f'{out_attr}',
                 trunk.description,
-            )
-            await conn.execute(
-                'insert into re_grp (reg_exp, group_id) values ($1, $2)',
-                '^' + re.escape(f'{trunk.sip_uri}'),
-                trunk.vats_id,
+                trunk.forced_socket,
             )
 
-            await add_dial_plan(conn, out_attr, 100, '^.*', trunk.username, f'{out_attr_next}')
-            await add_dial_plan(conn, out_attr_next, 100, '^.*', trunk.domain, None)
-            await add_dial_plan(conn, trunk.vats_id, 1, trunk.username_regexp, VOX_USERNAME, f'{OUT_DPID_START}')
+            await add_dial_plan(conn, 100, 0, 0, trunk.match_number, 1, trunk.mdo_domain, '')
+            await add_dial_plan(conn, out_attr, 100, 1, '^.*', 0, trunk.username, f'{out_attr_next}')
+            await add_dial_plan(conn, out_attr_next, 100, 1, '^.*', 0, trunk.domain, '')
+
             return True
 
 

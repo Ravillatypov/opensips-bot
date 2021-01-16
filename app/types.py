@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 
-from app.settings import OSIPS_IP
+from app.settings import OSIPS_IP, OSIPS_CLUSTER_TAG
 
 
 @dataclass
@@ -13,6 +13,7 @@ class Trunk:
     password: str = ''
     port: str = None
     proxy: str = None
+    match_number: str = ''
 
     @property
     def username_regexp(self) -> str:
@@ -33,3 +34,15 @@ class Trunk:
     @property
     def sip_uri_regexp(self) -> str:
         return f'^{re.escape(self.sip_uri)}'
+
+    @property
+    def forced_socket(self) -> str:
+        return f'udp:{OSIPS_IP}:5060'
+
+    @property
+    def cluster_shtag(self) -> str:
+        return OSIPS_CLUSTER_TAG
+
+    @property
+    def mdo_domain(self) -> str:
+        return f'vats{self.vats_id}.sip.mdo.mobi'

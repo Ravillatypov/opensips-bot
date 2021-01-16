@@ -49,6 +49,16 @@ async def username(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
+        'external_number'
+    )
+
+
+@dp.message_handler(state=TrunkForm.username)
+async def external_number(message: Message, state: FSMContext):
+    await state.update_data(external_number=message.text.strip())
+    await TrunkForm.next()
+    await bot.send_message(
+        message.chat.id,
         'domain'
     )
 
@@ -82,7 +92,7 @@ async def port(message: Message, state: FSMContext):
 
 
 @dp.message_handler(state=TrunkForm.proxy)
-async def port(message: Message, state: FSMContext):
+async def proxy(message: Message, state: FSMContext):
     await state.update_data(proxy=message.text.strip())
     await TrunkForm.confirm.set()
     await send_confirm_message(
@@ -163,7 +173,8 @@ async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
             data.get('domain'),
             data.get('password'),
             port_number,
-            proxy_uri
+            proxy_uri,
+            data.get('external_number'),
         ))
         await opensips_cmd('dr_reload')
         await opensips_cmd('dp_reload')

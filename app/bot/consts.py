@@ -18,6 +18,7 @@ class TrunkForm(StatesGroup):
     description = State()
     vats_id = State()
     username = State()
+    external_number = State()
     domain = State()
     password = State()
     confirm = State()
