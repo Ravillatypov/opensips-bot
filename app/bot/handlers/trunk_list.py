@@ -1,4 +1,6 @@
+from collections import namedtuple
 from logging import getLogger
+from typing import List
 
 from aiogram.types import CallbackQuery
 
@@ -8,7 +10,6 @@ from app.settings import db
 from app.utils import opensips_cmd
 
 logger = getLogger(__name__)
-
 
 reg_status = {
     'NOT_REGISTERED_STATE': 'в процессе',
@@ -21,33 +22,78 @@ reg_status = {
     'REGISTRAR_ERROR_STATE': 'ошибка при регистрации',
 }
 
+Reg = namedtuple('Reg', ['vats_id', 'description', 'aor', 'state', 'status'])
 
-@dp.callback_query_handler(lambda c: c.data == CallbackMethods.trunk_list)
-async def trunk_list(callback_query: CallbackQuery, **kwargs):
-    # https://opensips.org/html/docs/modules/3.1.x/uac_registrant.html
 
-    await callback_query.answer()
+async def _get_regs() -> List[Reg]:
     result = []
     reg_list = await opensips_cmd('reg_list')
     reg_list = reg_list.get('result', {}).get('Records', [])
     regs = {i.get('AOR', ''): i.get('state', '') for i in reg_list}
 
     async with db as conn:
-        for description, vats_id, sip_regexp in await conn.fetch(
-                'SELECT g.description, g.gwid, r.reg_exp FROM dr_gateways AS g '
-                'JOIN re_grp AS r ON r.group_id = CAST(g.gwid AS INTEGER);'
+        for vats_id, description, aor in await conn.fetch(
+                '''SELECT g.gwid, g.description, 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor'''
+                ' FROM dr_gateways g '
+                'JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid'
+                'JOIN dialplan d2 ON CAST(d.attrs AS INTEGER) = d2.dpid;'
         ):
             description = description or ''
-            sip = sip_regexp.replace('^', '').replace('\\', '')
-            status = reg_status.get(regs.get(sip, ''), regs.get(sip, ''))
+            status = reg_status.get(regs.get(aor, ''), regs.get(aor, '')) or ''
+            result.append(Reg(vats_id, description, aor, regs.get(aor, ''), status))
 
-            if status:
-                result.append(f'{description} ({vats_id}): {status}')
-            else:
-                logger.warning(f'from db: {sip_regexp}, regs: {regs}')
+    return result
+
+
+@dp.callback_query_handler(lambda c: c.data == CallbackMethods.trunk_list)
+async def trunk_list(callback_query: CallbackQuery, **kwargs):
+    # https://opensips.org/html/docs/modules/3.1.x/uac_registrant.html
+
+    await callback_query.answer()
+    result = await _get_regs()
 
     if result:
-        text = '\n'.join(result)
+        text = '\n'.join([f'{i.description} ({i.vats_id}): {i.status}' for i in result])
+    else:
+        text = 'список пуст'
+
+    await bot.send_message(
+        callback_query.message.chat.id,
+        text
+    )
+
+
+@dp.callback_query_handler(lambda c: c.data == CallbackMethods.trunk_list_fail)
+async def trunk_list_fail(callback_query: CallbackQuery, **kwargs):
+    # https://opensips.org/html/docs/modules/3.1.x/uac_registrant.html
+
+    await callback_query.answer()
+    result = await _get_regs()
+
+    if result:
+        text = '\n'.join(
+            [f'{i.description} ({i.vats_id}): {i.status}' for i in result if i.state != 'REGISTERED_STATE']
+        )
+    else:
+        text = 'список пуст'
+
+    await bot.send_message(
+        callback_query.message.chat.id,
+        text
+    )
+
+
+@dp.callback_query_handler(lambda c: c.data == CallbackMethods.trunk_list_success)
+async def trunk_list_success(callback_query: CallbackQuery, **kwargs):
+    # https://opensips.org/html/docs/modules/3.1.x/uac_registrant.html
+
+    await callback_query.answer()
+    result = await _get_regs()
+
+    if result:
+        text = '\n'.join(
+            [f'{i.description} ({i.vats_id}): {i.status}' for i in result if i.state == 'REGISTERED_STATE']
+        )
     else:
         text = 'список пуст'
 
