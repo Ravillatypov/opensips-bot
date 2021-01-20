@@ -33,9 +33,9 @@ async def _get_regs() -> List[Reg]:
 
     async with db as conn:
         for vats_id, description, aor in await conn.fetch(
-                '''SELECT g.gwid, g.description, 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor'''
-                ' FROM dr_gateways g '
-                'JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid'
+                '''SELECT g.gwid, g.description, 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor '''
+                'FROM dr_gateways g '
+                'JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid '
                 'JOIN dialplan d2 ON CAST(d.attrs AS INTEGER) = d2.dpid;'
         ):
             description = description or ''
@@ -51,15 +51,14 @@ async def trunk_list(callback_query: CallbackQuery, **kwargs):
 
     await callback_query.answer()
     result = await _get_regs()
+    text = ''
 
     if result:
         text = '\n'.join([f'{i.description} ({i.vats_id}): {i.status}' for i in result])
-    else:
-        text = 'список пуст'
 
     await bot.send_message(
         callback_query.message.chat.id,
-        text
+        text or 'список пуст'
     )
 
 
@@ -69,17 +68,16 @@ async def trunk_list_fail(callback_query: CallbackQuery, **kwargs):
 
     await callback_query.answer()
     result = await _get_regs()
+    text = ''
 
     if result:
         text = '\n'.join(
             [f'{i.description} ({i.vats_id}): {i.status}' for i in result if i.state != 'REGISTERED_STATE']
         )
-    else:
-        text = 'список пуст'
 
     await bot.send_message(
         callback_query.message.chat.id,
-        text
+        text or 'Нет проблемных транков'
     )
 
 
@@ -89,15 +87,14 @@ async def trunk_list_success(callback_query: CallbackQuery, **kwargs):
 
     await callback_query.answer()
     result = await _get_regs()
+    text = ''
 
     if result:
         text = '\n'.join(
             [f'{i.description} ({i.vats_id}): {i.status}' for i in result if i.state == 'REGISTERED_STATE']
         )
-    else:
-        text = 'список пуст'
 
     await bot.send_message(
         callback_query.message.chat.id,
-        text
+        text or 'список пуст'
     )
