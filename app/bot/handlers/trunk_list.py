@@ -31,6 +31,7 @@ async def trunk_list(callback_query: CallbackQuery, **kwargs):
     reg_list = await opensips_cmd('reg_list')
     reg_list = reg_list.get('result', {}).get('Records', [])
     regs = {i.get('AOR', ''): i.get('state', '') for i in reg_list}
+    is_shipped = False
 
     async with db as conn:
         for description, vats_id, sip_regexp in await conn.fetch(
@@ -46,12 +47,16 @@ async def trunk_list(callback_query: CallbackQuery, **kwargs):
             else:
                 logger.warning(f'from db: {sip_regexp}, regs: {regs}')
 
-    if result:
-        text = '\n'.join(result)
-    else:
-        text = 'список пуст'
+        if len(result) == 10:
+            await bot.send_message(
+                callback_query.message.chat.id,
+                '\n'.join(result)
+            )
+            result.clear()
+            is_shipped = True
 
-    await bot.send_message(
-        callback_query.message.chat.id,
-        text
-    )
+    if not is_shipped:
+        await bot.send_message(
+            callback_query.message.chat.id,
+            'список пуст'
+        )
