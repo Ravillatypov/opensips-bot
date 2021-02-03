@@ -12,6 +12,8 @@ class CallbackMethods:
     add_trunk_port = 'add_trunk_port'
     add_trunk_proxy = 'add_trunk_proxy'
     trunk_list = 'trunk_list'
+    trunk_list_success = 'trunk_list_success'
+    trunk_list_fail = 'trunk_list_fail'
 
 
 class TrunkForm(StatesGroup):

@@ -5,15 +5,31 @@ from app.bot.misc import bot
 
 
 async def add_keyboard(chat_id: int, message: str):
-    markup = kb.InlineKeyboardMarkup()
-    markup.add(kb.InlineKeyboardButton(
-        'Добавить транк',
-        callback_data=CallbackMethods.add_trunk
-    ))
-    markup.add(kb.InlineKeyboardButton(
-        'Список транков',
-        callback_data=CallbackMethods.trunk_list
-    ))
+    markup = kb.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        kb.InlineKeyboardButton(
+            'Добавить транк',
+            callback_data=CallbackMethods.add_trunk
+        )
+    )
+    markup.add(
+        kb.InlineKeyboardButton(
+            'Список всех транков',
+            callback_data=CallbackMethods.trunk_list
+        )
+    )
+    markup.add(
+        kb.InlineKeyboardButton(
+            'Список успешных транков',
+            callback_data=CallbackMethods.trunk_list_success
+        )
+    )
+    markup.add(
+        kb.InlineKeyboardButton(
+            'Список проблемных транков',
+            callback_data=CallbackMethods.trunk_list_fail
+        )
+    )
 
     await bot.send_message(
         chat_id,
