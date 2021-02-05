@@ -15,6 +15,7 @@ class CallbackMethods:
     trunk_list_success = 'trunk_list_success'
     trunk_list_fail = 'trunk_list_fail'
     remove_trunk = 'remove_trunk'
+    list_remove_trunk = 'list_remove_trunk'
     cancel_trunk_remove = 'cancel_trunk_remove'
 
 

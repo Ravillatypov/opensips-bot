@@ -30,6 +30,12 @@ async def add_keyboard(chat_id: int, message: str):
             callback_data=CallbackMethods.trunk_list_fail
         )
     )
+    markup.add(
+        kb.InlineKeyboardButton(
+            'Удалить транк',
+            callback_data=CallbackMethods.remove_trunk
+        )
+    )
 
     await bot.send_message(
         chat_id,

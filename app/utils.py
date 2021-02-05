@@ -74,6 +74,29 @@ async def add_trunk_to_db(trunk: Trunk) -> bool:
             return True
 
 
+async def remove_trunk_from_db(vats_id: int):
+    out_attr = OUT_DPID_START + vats_id
+    out_attr_next = OUT_DPID_START + out_attr
+
+    async with db as conn:
+        async with conn.transaction():
+            await conn.execute(
+                '''DELETE FROM registrant WHERE aor IN (SELECT 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor
+                FROM dr_gateways g 
+                JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid
+                JOIN dialplan d2 ON CAST(d.attrs AS INTEGER) = d2.dpid
+                WHERE g.gwid = $1);''',
+                f'{vats_id}'
+            )
+
+            await conn.execute('''DELETE FROM dr_gateways WHERE gwid = $1;''', vats_id)
+
+            await conn.execute(
+                '''DELETE FROM dialplan WHERE dpid in $1 ;''',
+                [out_attr, out_attr_next, vats_id]
+            )
+
+
 async def aio_cmd(cmd: str) -> Tuple[bool, bytes, bytes]:
     proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     stdout, stderr = await proc.communicate()
@@ -87,3 +110,9 @@ async def opensips_cmd(cmd: str) -> dict:
             if resp.status == 200:
                 return await resp.json()
             raise Exception(await resp.text())
+
+
+async def opensips_reload_regs():
+    await opensips_cmd('dr_reload')
+    await opensips_cmd('dp_reload')
+    await opensips_cmd('reg_reload')
