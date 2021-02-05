@@ -39,16 +39,6 @@ async def vats_id(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'username'
-    )
-
-
-@dp.message_handler(state=TrunkForm.username)
-async def username(message: Message, state: FSMContext):
-    await state.update_data(username=message.text.strip())
-    await TrunkForm.next()
-    await bot.send_message(
-        message.chat.id,
         'domain'
     )
 
@@ -56,6 +46,16 @@ async def username(message: Message, state: FSMContext):
 @dp.message_handler(state=TrunkForm.domain)
 async def domain(message: Message, state: FSMContext):
     await state.update_data(domain=message.text.strip())
+    await TrunkForm.next()
+    await bot.send_message(
+        message.chat.id,
+        'username'
+    )
+
+
+@dp.message_handler(state=TrunkForm.username)
+async def username(message: Message, state: FSMContext):
+    await state.update_data(username=message.text.strip())
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,

@@ -58,6 +58,7 @@ async def send_confirm_message(chat_id, data):
     ))
 
     message = ('Данные транка:\n'
+               f'Описание: {data.get("description")}'
                f'vats_id: {data.get("vats_id")}\n'
                f'domain: {data.get("domain")}\n'
                f'username: {data.get("username")}\n'

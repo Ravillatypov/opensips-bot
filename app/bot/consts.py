@@ -14,13 +14,15 @@ class CallbackMethods:
     trunk_list = 'trunk_list'
     trunk_list_success = 'trunk_list_success'
     trunk_list_fail = 'trunk_list_fail'
+    remove_trunk = 'remove_trunk'
+    cancel_trunk_remove = 'cancel_trunk_remove'
 
 
 class TrunkForm(StatesGroup):
     description = State()
     vats_id = State()
-    username = State()
     domain = State()
+    username = State()
     password = State()
     confirm = State()
     port = State()
