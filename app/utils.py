@@ -89,11 +89,10 @@ async def remove_trunk_from_db(vats_id: int):
                 f'{vats_id}'
             )
 
-            await conn.execute('''DELETE FROM dr_gateways WHERE gwid = $1;''', vats_id)
+            await conn.execute('''DELETE FROM dr_gateways WHERE gwid = $1;''', f'{vats_id}')
 
             await conn.execute(
-                '''DELETE FROM dialplan WHERE dpid in $1 ;''',
-                [out_attr, out_attr_next, vats_id]
+                f'''DELETE FROM dialplan WHERE dpid in ({out_attr}, {out_attr_next}, {vats_id}) ;''',
             )
 
 
