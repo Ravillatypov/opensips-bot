@@ -94,6 +94,9 @@ async def remove_trunk_from_db(vats_id: int):
             await conn.execute(
                 f'''DELETE FROM dialplan WHERE dpid in ({out_attr}, {out_attr_next}, {vats_id}) ;''',
             )
+            await conn.execute(
+                f'''DELETE FROM re_grp WHERE group_id = {vats_id} ;''',
+            )
 
 
 async def aio_cmd(cmd: str) -> Tuple[bool, bytes, bytes]:

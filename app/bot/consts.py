@@ -28,3 +28,7 @@ class TrunkForm(StatesGroup):
     confirm = State()
     port = State()
     proxy = State()
+
+
+class RemoveTrunkState(StatesGroup):
+    select_vats = State()
