@@ -63,11 +63,14 @@ async def send_confirm_message(chat_id, data):
         callback_data=CallbackMethods.add_trunk_proxy
     ))
 
-    message = ('Данные транка:\n'
-               f'vats_id: {data.get("vats_id")}\n'
-               f'domain: {data.get("domain")}\n'
-               f'username: {data.get("username")}\n'
-               f'password: {data.get("password")}\n')
+    message = (
+        'Данные транка:\n'
+        f'vats_id: {data.get("vats_id")}\n'
+        f'domain: {data.get("domain")}\n'
+        f'username: {data.get("username")}\n'
+        f'password: {data.get("password")}\n'
+        f'external_number: {data.get("external_number")}\n'
+    )
 
     if data.get('port'):
         message += f'port: {data.get("port")}\n'

@@ -21,10 +21,14 @@ class CallbackMethods:
 class TrunkForm(StatesGroup):
     description = State()
     vats_id = State()
+    domain = State()
     username = State()
     external_number = State()
-    domain = State()
     password = State()
     confirm = State()
     port = State()
     proxy = State()
+
+
+class RemoveTrunkState(StatesGroup):
+    select_vats = State()

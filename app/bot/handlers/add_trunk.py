@@ -8,7 +8,7 @@ from app.bot.misc import bot, dp
 from app.bot.utils import add_keyboard, send_confirm_message
 from app.settings import OUT_DPID_START, ADMINS
 from app.types import Trunk
-from app.utils import vats_exists, opensips_cmd, add_trunk_to_db
+from app.utils import vats_exists, opensips_reload_regs, add_trunk_to_db
 
 logger = getLogger(__name__)
 
@@ -39,7 +39,7 @@ async def vats_id(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'username'
+        'domain'
     )
 
 
@@ -53,13 +53,13 @@ async def username(message: Message, state: FSMContext):
     )
 
 
-@dp.message_handler(state=TrunkForm.username)
+@dp.message_handler(state=TrunkForm.external_number)
 async def external_number(message: Message, state: FSMContext):
     await state.update_data(external_number=message.text.strip())
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'domain'
+        'password'
     )
 
 
@@ -69,7 +69,7 @@ async def domain(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'password'
+        'username'
     )
 
 
@@ -176,13 +176,12 @@ async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
             proxy_uri,
             data.get('external_number'),
         ))
-        await opensips_cmd('dr_reload')
-        await opensips_cmd('dp_reload')
-        await opensips_cmd('reg_reload')
+        await opensips_reload_regs()
     except Exception as e:
         await bot.send_message(callback_query.message.chat.id, f'Не удалось добавить. Ошибка сервера.\n\n{e}')
         logger.warning(f'{e}', exc_info=e)
     else:
         await callback_query.message.delete_reply_markup()
-        await state.finish()
         await add_keyboard(callback_query.message.chat.id, 'Добавить еще транк?')
+
+    await state.finish()
