@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 
 from app.bot.consts import CallbackMethods, TrunkForm
 from app.bot.misc import bot, dp
-from app.bot.utils import add_keyboard, send_confirm_message
+from app.bot.utils import add_keyboard, send_confirm_message, delete_callback_message
 from app.settings import OUT_DPID_START, ADMINS
 from app.types import Trunk
 from app.utils import vats_exists, opensips_reload_regs, add_trunk_to_db
@@ -49,7 +49,7 @@ async def username(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'external_number'
+        'password'
     )
 
 
@@ -59,7 +59,7 @@ async def external_number(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'password'
+        'username'
     )
 
 
@@ -69,7 +69,7 @@ async def domain(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'username'
+        'external_number'
     )
 
 
@@ -106,7 +106,7 @@ async def proxy(message: Message, state: FSMContext):
 @dp.callback_query_handler(lambda x: x.data == CallbackMethods.add_trunk)
 async def add_trunk(callback_query: CallbackQuery, **kwargs):
     await callback_query.answer()
-    await callback_query.message.delete()
+    await delete_callback_message(callback_query)
 
     if callback_query.message.chat.username not in ADMINS:
         await bot.send_message(
@@ -126,13 +126,15 @@ async def add_trunk(callback_query: CallbackQuery, **kwargs):
 @dp.callback_query_handler(lambda c: c.data == CallbackMethods.add_trunk_decline, state=TrunkForm.confirm)
 async def decline(callback_query: CallbackQuery, state: FSMContext, **kwargs):
     await state.finish()
-    await callback_query.message.delete()
+    await callback_query.answer()
+    await delete_callback_message(callback_query)
     await add_keyboard(callback_query.message.chat.id, 'Добавить еще транк?')
 
 
 @dp.callback_query_handler(lambda c: c.data == CallbackMethods.add_trunk_port, state=TrunkForm.confirm)
 async def port_callback(callback_query: CallbackQuery, state: FSMContext, **kwargs):
-    await callback_query.message.delete()
+    await callback_query.answer()
+    await delete_callback_message(callback_query)
     await bot.send_message(
         callback_query.message.chat.id,
         'Введите номер порта'
@@ -142,7 +144,8 @@ async def port_callback(callback_query: CallbackQuery, state: FSMContext, **kwar
 
 @dp.callback_query_handler(lambda c: c.data == CallbackMethods.add_trunk_proxy, state=TrunkForm.confirm)
 async def proxy_callback(callback_query: CallbackQuery, state: FSMContext, **kwargs):
-    await callback_query.message.delete()
+    await callback_query.answer()
+    await delete_callback_message(callback_query)
     await bot.send_message(
         callback_query.message.chat.id,
         'Введите прокси. Например: sip.sbc.ru:5665'

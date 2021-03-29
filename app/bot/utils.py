@@ -1,4 +1,4 @@
-from aiogram.types import inline_keyboard as kb
+from aiogram.types import inline_keyboard as kb, CallbackQuery
 
 from app.bot.consts import CallbackMethods
 from app.bot.misc import bot
@@ -65,11 +65,12 @@ async def send_confirm_message(chat_id, data):
 
     message = (
         'Данные транка:\n'
+        f'Описание: {data.get("description")}\n'
         f'vats_id: {data.get("vats_id")}\n'
         f'domain: {data.get("domain")}\n'
+        f'external_number: {data.get("external_number")}\n'
         f'username: {data.get("username")}\n'
         f'password: {data.get("password")}\n'
-        f'external_number: {data.get("external_number")}\n'
     )
 
     if data.get('port'):
@@ -83,3 +84,10 @@ async def send_confirm_message(chat_id, data):
         f'{message}\nПодвердите добавление транка',
         reply_markup=markup
     )
+
+
+async def delete_callback_message(cb: CallbackQuery):
+    try:
+        await cb.message.delete()
+    except Exception:
+        pass

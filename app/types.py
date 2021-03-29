@@ -25,7 +25,7 @@ class Trunk:
 
     @property
     def local_sip_uri(self) -> str:
-        return f'sip:{self.username}@{OSIPS_IP}:5060'
+        return f'sip:{self.match_number}@{OSIPS_IP}:5060'
 
     @property
     def sip_uri(self) -> str:

@@ -79,20 +79,20 @@ async def remove_trunk_from_db(vats_id: int):
     async with db as conn:
         async with conn.transaction():
             await conn.execute(
-                '''DELETE FROM registrant WHERE aor IN (SELECT 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor
+                f'''DELETE FROM registrant WHERE aor IN (SELECT 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor
                 FROM dr_gateways g 
                 JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid
                 JOIN dialplan d2 ON CAST(d.attrs AS INTEGER) = d2.dpid
-                WHERE g.gwid = $1);''',
-                vats_id
+                WHERE g.gwid = '{vats_id}');''',
+
             )
 
-            await conn.execute('''DELETE FROM dr_gateways WHERE gwid = $1;''', vats_id)
+            await conn.execute(f'''DELETE FROM dr_gateways WHERE gwid = '{vats_id}';''')
 
             await conn.execute(
-                '''DELETE FROM dialplan WHERE repl_exp = $1 OR dpid in $2 ;''',
-                f'vats{vats_id}.sip.mdo.mobi',
-                [out_attr, out_attr_next]
+                f'''DELETE FROM dialplan WHERE 
+                                         repl_exp = 'vats{vats_id}.sip.mdo.mobi' OR 
+                                         dpid in ({out_attr}, {out_attr_next}) ;''',
             )
 
 
