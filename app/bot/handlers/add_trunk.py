@@ -69,7 +69,7 @@ async def domain(message: Message, state: FSMContext):
     await TrunkForm.next()
     await bot.send_message(
         message.chat.id,
-        'external_number'
+        'external_number (7...)'
     )
 
 
@@ -185,6 +185,6 @@ async def confirm(callback_query: CallbackQuery, state: FSMContext, **kwargs):
         logger.warning(f'{e}', exc_info=e)
     else:
         await callback_query.message.delete_reply_markup()
-        await add_keyboard(callback_query.message.chat.id, 'Добавить еще транк?')
+        await add_keyboard(callback_query.message.chat.id, 'Транк добавлен')
 
     await state.finish()

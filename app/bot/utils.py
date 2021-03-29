@@ -68,7 +68,7 @@ async def send_confirm_message(chat_id, data):
         f'Описание: {data.get("description")}\n'
         f'vats_id: {data.get("vats_id")}\n'
         f'domain: {data.get("domain")}\n'
-        f'external_number: {data.get("external_number")}\n'
+        f'external_number (7...): {data.get("external_number")}\n'
         f'username: {data.get("username")}\n'
         f'password: {data.get("password")}\n'
     )
