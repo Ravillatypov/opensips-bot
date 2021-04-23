@@ -1,3 +1,4 @@
+from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
 from app.bot.consts import CommandMethods
@@ -7,7 +8,9 @@ from app.settings import ADMINS
 
 
 @dp.message_handler(commands=[CommandMethods.start])
-async def start(message: Message):
+async def start(message: Message, state: FSMContext):
+    await state.finish()
+
     if message.from_user.username not in ADMINS:
         await bot.send_message(
             message.chat.id,
