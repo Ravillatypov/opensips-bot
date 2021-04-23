@@ -36,7 +36,7 @@ async def _get_regs() -> List[Reg]:
                 '''SELECT g.gwid, g.description, 'sip:' || d.repl_exp || '@' || d2.repl_exp as aor '''
                 'FROM dr_gateways g '
                 'JOIN dialplan d ON CAST(g.attrs AS INTEGER) = d.dpid '
-                'JOIN dialplan d2 ON CAST(d.attrs AS INTEGER) = d2.dpid;'
+                'JOIN dialplan d2 ON CAST(d2.dpid AS TEXT) = d.attrs;'
         ):
             description = description or ''
             status = reg_status.get(regs.get(aor, ''), regs.get(aor, '')) or ''
