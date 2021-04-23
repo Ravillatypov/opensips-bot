@@ -7,7 +7,7 @@ from app.bot.utils import add_keyboard
 from app.settings import ADMINS
 
 
-@dp.message_handler(commands=[CommandMethods.start])
+@dp.message_handler(commands=[CommandMethods.start], state='*')
 async def start(message: Message, state: FSMContext):
     await state.finish()
 
